@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
-'Testbed - Escenario 1 con 4 Access Points y 12 estaciones'
+"Testbed - Simulacion #1 con Access-Points y Estaciones virtuales mas Enlace Fisico"
+"ejecutar comando: sudo tesis-sdn-testbed/Simulation1.py"
 
+import subprocess
 from mininet.net import Mininet
 from mininet.node import OVSSwitch, OVSKernelSwitch, OVSKernelAP, Controller, RemoteController
 from mininet.link import TCLink
@@ -10,10 +12,10 @@ from mininet.log import setLogLevel
 
 def topology():
 
-    "Crear la red."
+    print "*** Creando la red"
     net = Mininet(controller=Controller, link=TCLink, accessPoint=OVSKernelAP)
 
-    "Crear los nodos"
+    print "*** Creando los nodos"
     c1 = net.addController('c1', controller=Controller)
     s1 = net.addSwitch('s1')
     net.plotNode(s1, position='40,137,0')
@@ -28,11 +30,12 @@ def topology():
     sta31 = net.addStation('sta31', mac='00:00:00:00:00:31', ip='10.0.0.31/8', position='240,25,0', range=5)
     sta41 = net.addStation('sta41', mac='00:00:00:00:00:41', ip='10.0.0.41/8', position='250,250,0', range=5)
     sta1 = net.addStation('sta1', mac='00:00:00:00:00:01', ip='10.0.0.1/8', range=5)
+    sta2 = net.addStation('sta2', mac='00:00:00:00:00:02', ip='10.0.0.2/8', range=5)
 
-    "Configurar los nodos WiFi"
+    print "*** Configurando los nodos WiFi"
     net.configureWifiNodes()
 
-    "Crear los enlaces"
+    print "*** Creando los enlaces y asociaciones"
     # net.addLink(ap1, ap2, bw='11Mbps', loss='0.1 %'', delay='15ms')
     net.addLink(s1, h1)
     net.addLink(s1, ap1)
@@ -40,7 +43,7 @@ def topology():
     net.addLink(s1, ap3)
     net.addLink(s1, ap4)
 
-    "Iniciar la red: el controlador y los AP"
+    print "*** Iniciando la red"
     net.build()
     c1.start()
     s1.start([c1])
@@ -49,20 +52,28 @@ def topology():
     ap3.start([c1])
     ap4.start([c1])
 
-    "Dibujar grafico"
+    print "*** Iniciando la red fisica"
+    subprocess.check_call(['/home/wifi/mininet-wifi/tesis-sdn-testbed/Simulation1-init.sh'])
+
+    print "*** Dibujando el grafico"
     net.plotGraph(max_x=300, max_y=300)
 
-    "Iniciar estaciones moviles"
+    print "*** Iniciando movilidad"
     net.startMobility(time=0)
     net.mobility(sta1, 'start', time=5, position='265.0,50.0,0.0')
+    net.mobility(sta2, 'start', time=5, position='265.0,200.0,0.0')
     net.mobility(sta1, 'stop', time=60, position='265.0,200.0,0.0')
+    net.mobility(sta2, 'stop', time=60, position='265.0,50.0,0.0')
     net.stopMobility(time=61)
 
-    "Iniciar consola CLI"
+    print "*** Iniciar consola CLI"
     CLI(net)
 
-    "Detener la red"
+    print "*** Deteniendo la red"
     net.stop()
+
+    print "*** Deteniendo la red fisica"
+    subprocess.check_call(['/home/wifi/mininet-wifi/tesis-sdn-testbed/Simulation1-close.sh'])
 
 if __name__ == '__main__':
     setLogLevel('info')
