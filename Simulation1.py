@@ -32,6 +32,9 @@ def topology():
     sta1 = net.addStation('sta1', mac='00:00:00:00:00:01', ip='10.0.0.1/8', range=5)
     sta2 = net.addStation('sta2', mac='00:00:00:00:00:02', ip='10.0.0.2/8', range=5)
 
+    print "*** Iniciando servidores"
+    h1.cmd("python -m SimpleHTTPServer 8080 &")
+
     print "*** Configurando los nodos WiFi"
     net.configureWifiNodes()
 
