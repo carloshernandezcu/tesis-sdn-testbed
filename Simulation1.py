@@ -1,52 +1,73 @@
 #!/usr/bin/python
 
-"Testbed - Simulacion #1 con Access-Points y Estaciones virtuales mas Enlace Fisico"
-"ejecutar comando: sudo tesis-sdn-testbed/Simulation1.py"
+""" TESTBED
+- Simulacion hibrida con Access-Points y Estaciones inalambricas
+- Enlace a Access Point fisico por tarjeta USB WiFi
+- Comando: $ sudo tesis-sdn-testbed/Simulation1.py
 
-import subprocess
+                .ap2    .ap4
+                .     .
+  phyap1. . .   .  .
+             .s1.
+      h1. . .   .  .
+                .     .
+                .ap1    .ap3
+"""
+
 from mininet.net import Mininet
-from mininet.node import OVSSwitch, OVSKernelSwitch, OVSKernelAP, Controller, RemoteController
-from mininet.link import TCLink
+from mininet.node import Node, OVSKernelSwitch, OVSKernelAP, Controller, RemoteController
+from mininet.link import TCLink, Intf
 from mininet.cli import CLI
 from mininet.log import setLogLevel
+from functools import partial
+import subprocess
 
 def topology():
 
-    print "*** Creando la red"
-    net = Mininet(controller=Controller, link=TCLink, accessPoint=OVSKernelAP)
+    print "\n*** Creando la red"
+    link = partial(TCLink, delay='2ms', bw=10)
+    net = Mininet(controller=Controller, accessPoint=OVSKernelAP, switch=OVSKernelSwitch, link=link)
 
-    print "*** Creando los nodos"
+    print "\n*** Creando los nodos"
     c1 = net.addController('c1', controller=Controller)
     s1 = net.addSwitch('s1')
     net.plotNode(s1, position='40,137,0')
-    h1 = net.addHost ('h1', ip='10.0.0.3/8')
-    net.plotNode(h1, position='10,137,0')
-    ap1 = net.addAccessPoint('ap1', ssid='Campus', mode='n', channel='1', position='115,75,0')
-    ap2 = net.addAccessPoint('ap2', ssid='Campus', mode='n', channel='4', position='115,200,0')
-    ap3 = net.addAccessPoint('ap3', ssid='Campus', mode='n', channel='8', position='215,75,0')
-    ap4 = net.addAccessPoint('ap4', ssid='Campus', mode='n', channel='11', position='215,200,0')
+    h1 = net.addHost('h1', ip='10.0.0.3/8')
+    net.plotNode(h1, position='10,125,0')
+    ap1 = net.addAccessPoint('ap1', ssid='Campus', mode='n', position='115,75,0', range=50)
+    ap2 = net.addAccessPoint('ap2', ssid='Campus', mode='n', position='115,200,0', range=50)
+    ap3 = net.addAccessPoint('ap3', ssid='Campus', mode='n', position='215,75,0', range=50)
+    ap4 = net.addAccessPoint('ap4', ssid='Campus', mode='n', position='215,200,0', range=50)
     sta11 = net.addStation('sta11', mac='00:00:00:00:00:11', ip='10.0.0.11/8', position='90,25,0', range=5)
     sta21 = net.addStation('sta21', mac='00:00:00:00:00:21', ip='10.0.0.21/8', position='90,250,0', range=5)
     sta31 = net.addStation('sta31', mac='00:00:00:00:00:31', ip='10.0.0.31/8', position='240,25,0', range=5)
     sta41 = net.addStation('sta41', mac='00:00:00:00:00:41', ip='10.0.0.41/8', position='250,250,0', range=5)
     sta1 = net.addStation('sta1', mac='00:00:00:00:00:01', ip='10.0.0.1/8', range=5)
     sta2 = net.addStation('sta2', mac='00:00:00:00:00:02', ip='10.0.0.2/8', range=5)
+    phyap1 = Node('phyap1')
+    net.plotNode(phyap1, position='10,150,0')
 
-    print "*** Iniciando servidores"
+    print "\n*** Iniciando servidores"
     h1.cmd("python -m SimpleHTTPServer 8080 &")
 
-    print "*** Configurando los nodos WiFi"
+    print "\n*** Configurando los nodos WiFi"
     net.configureWifiNodes()
 
-    print "*** Creando los enlaces y asociaciones"
-    # net.addLink(ap1, ap2, bw='11Mbps', loss='0.1 %'', delay='15ms')
+    print "\n*** Creando los enlaces red virtual"
+    #net.addLink(ap1, ap2, bw='11Mbps', loss='0.1 %'', delay='15ms')
     net.addLink(s1, h1)
     net.addLink(s1, ap1)
     net.addLink(s1, ap2)
     net.addLink(s1, ap3)
     net.addLink(s1, ap4)
 
-    print "*** Iniciando la red"
+    print "\n*** Creando enlace red virtual a red fisica"
+    Intf('wlan0', node=s1)
+
+    print "\n*** Activando el control de asociacion -wifi strongest signal first-"
+    net.associationControl('ssf')
+
+    print "\n*** Iniciando la red"
     net.build()
     c1.start()
     s1.start([c1])
@@ -55,13 +76,13 @@ def topology():
     ap3.start([c1])
     ap4.start([c1])
 
-    print "*** Iniciando la red fisica"
-    subprocess.check_call(['/home/wifi/mininet-wifi/tesis-sdn-testbed/Simulation1-init.sh'])
+    print "\n*** Iniciando la red fisica"
+    subprocess.check_call(['/home/wifi/mininet-wifi/tesis-sdn-testbed/Simulation-init.sh'])
 
-    print "*** Dibujando el grafico"
+    print "\n*** Dibujando el grafico"
     net.plotGraph(max_x=300, max_y=300)
 
-    print "*** Iniciando movilidad"
+    print "\n*** Iniciando movilidad"
     net.startMobility(time=0)
     net.mobility(sta1, 'start', time=5, position='265.0,50.0,0.0')
     net.mobility(sta2, 'start', time=5, position='265.0,200.0,0.0')
@@ -69,14 +90,14 @@ def topology():
     net.mobility(sta2, 'stop', time=60, position='265.0,50.0,0.0')
     net.stopMobility(time=61)
 
-    print "*** Iniciar consola CLI"
+    print "\n*** Iniciar consola CLI"
     CLI(net)
 
-    print "*** Deteniendo la red"
+    print "\n*** Deteniendo la red"
     net.stop()
 
-    print "*** Deteniendo la red fisica"
-    subprocess.check_call(['/home/wifi/mininet-wifi/tesis-sdn-testbed/Simulation1-close.sh'])
+    print "\n*** Deteniendo la red fisica"
+    subprocess.check_call(['/home/wifi/mininet-wifi/tesis-sdn-testbed/Simulation-close.sh'])
 
 if __name__ == '__main__':
     setLogLevel('info')
