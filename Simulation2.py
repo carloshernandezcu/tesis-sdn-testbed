@@ -60,7 +60,7 @@ def topology():
     Intf('wlan0', node=ap1)
 
     print "\n*** Activando el control de asociacion -wifi strongest signal first-"
-    # net.associationControl('ssf')
+    net.associationControl('ssf')
 
     print "\n*** Iniciando la red"
     net.build()
@@ -71,7 +71,7 @@ def topology():
     ap4.start([c1])
 
     print "\n*** Iniciando la red fisica"
-    # subprocess.check_call(['/home/wifi/mininet-wifi/tesis-sdn-testbed/Simulation-init.sh'])
+    subprocess.check_call(['/home/wifi/mininet-wifi/tesis-sdn-testbed/Simulation-init.sh'])
 
     print "\n*** Dibujando el grafico"
     net.plotGraph(max_x=300, max_y=300)
